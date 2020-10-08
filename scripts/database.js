@@ -18,7 +18,7 @@ function populateAll(){
     var db = openDatabase('bookdb','1.0','online bookstore',2*1024*1024);
 db.transaction(function (tx){
     tx.executeSql('create table if not exists books(bookId unique, name, author, price, description, shortDes, image)');
-    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price)');
+    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price, quantity)');
 });
 
 db.transaction(function (tx) { 
@@ -184,7 +184,7 @@ function addToCart(){
     var db = openDatabase('bookdb','1.0','online bookstore',2*1024*1024);
 db.transaction(function (tx){
     tx.executeSql('create table if not exists books(bookId unique, name, author, price, description, shortDes, image)');
-    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price)');
+    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price, quantity)');
 });
 db.transaction(function(tx){
     tx.executeSql('SELECT * FROM cart', [], function (tx, results) { 
@@ -323,14 +323,32 @@ db.transaction(function (tx) {
               cartId = cart.length;
           }
           
-          
-    var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price']};
+          tx.executeSql('select * from cart where name = ?',[bookItem['name']],function(tx, result){
+              var cLen = result.rows.length;
+              if(cLen==0){
+                  var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price'], quantity : "1"};
           console.log(cartItem);
           
-          tx.executeSql('INSERT INTO cart VALUES (?,?,?,?)', [cartItem['cartId'], cartItem['bookId'],cartItem['name'],cartItem['price']]);
+          tx.executeSql('INSERT INTO cart VALUES (?,?,?,?,?)', [cartItem['cartId'], cartItem['bookId'],cartItem['name'],cartItem['price'],cartItem['quantity']]);
           console.log('added to cart successfully');
           
           window.location.href = 'index.html?msg=Added To Cart Successfully';
+              }else{
+                  var p = result.rows[0];
+                  var newQuantity = parseInt(p['quantity']) + 1;
+                  
+                  var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price'], quantity : String(newQuantity)};
+          console.log(cartItem);
+          
+          tx.executeSql('Update cart set quantity = ? where name = ?', [cartItem['quantity'], cartItem['name']]);
+          console.log('added to cart successfully');
+          
+          window.location.href = 'index.html?msg=Added To Cart Successfully';
+                  
+              }
+          },null);
+          
+    
           
         
           
@@ -353,13 +371,32 @@ db.transaction(function (tx) {
           }
           
           
-    var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price']};
+          
+          
+    tx.executeSql('select * from cart where name = ?',[bookItem['name']],function(tx, result){
+              var cLen = result.rows.length;
+              if(cLen==0){
+                  var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price'], quantity : "1"};
           console.log(cartItem);
           
-          tx.executeSql('INSERT INTO cart VALUES (?,?,?,?)', [cartItem['cartId'], cartItem['bookId'],cartItem['name'],cartItem['price']]);
+          tx.executeSql('INSERT INTO cart VALUES (?,?,?,?,?)', [cartItem['cartId'], cartItem['bookId'],cartItem['name'],cartItem['price'],cartItem['quantity']]);
           console.log('added to cart successfully');
           
           window.location.href = 'index.html?msg=Added To Cart Successfully';
+              }else{
+                  var p = result.rows[0];
+                  var newQuantity = parseInt(p['quantity']) + 1;
+                  
+                  var cartItem = {cartId : String(cartId), bookId : bookItem['bookId'], name : bookItem['name'], price : bookItem['price'], quantity : String(newQuantity)};
+          console.log(cartItem);
+          
+          tx.executeSql('Update cart set quantity = ? where name = ?', [cartItem['quantity'], cartItem['name']]);
+          console.log('added to cart successfully');
+          
+          window.location.href = 'index.html?msg=Added To Cart Successfully';
+                  
+              }
+          },null);
     
       }
   
@@ -374,7 +411,7 @@ function displayCart(){
     var db = openDatabase('bookdb','1.0','online bookstore',2*1024*1024);
 db.transaction(function (tx){
     tx.executeSql('create table if not exists books(bookId unique, name, author, price, description, shortDes, image)');
-    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price)');
+    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price, quantity)');
 });
 db.transaction(function(tx){
     tx.executeSql('SELECT * FROM cart', [], function (tx, results) { 
@@ -387,6 +424,7 @@ db.transaction(function(tx){
           for(var i = 0;i<len;i++){
               cartItems.push(retrievedBooks[i]);
           }
+          
           
           var x = document.getElementById("menuTable");
     
@@ -402,6 +440,9 @@ db.transaction(function(tx){
     head.appendChild(document.createTextNode('Price'));
     head = document.createElement('th');
     heading.appendChild(head);
+    head.appendChild(document.createTextNode('Quantity'));
+    head = document.createElement('th');
+    heading.appendChild(head);
     head.appendChild(document.createTextNode('Action'));
     
    function pop(item, index){
@@ -414,24 +455,18 @@ db.transaction(function(tx){
         td = document.createElement('td');
        tr.appendChild(td);
         td.appendChild(document.createTextNode(item['price']));
+       td = document.createElement('td');
+       tr.appendChild(td);
+        td.appendChild(document.createTextNode(item['quantity']));
         td = document.createElement('td');
        tr.appendChild(td);
        td.innerHTML = "<button><a href = 'deleteFromCart.html?index="+index+"'>Delete</a></button>";
        
-       totalPrice = parseInt(totalPrice) + parseInt(item['price']);
+       totalPrice = parseInt(totalPrice) + (parseInt(item['price'])*parseInt(item['quantity']));
        
    }
 cartItems.forEach(pop);
           document.getElementById('total').innerHTML = "<h4>Total Price : "+totalPrice+"</h4>"
-          
-          const queryString = window.location.search;
-
-    const urlParams = new URLSearchParams(queryString);
-
-    const index = urlParams.get('msg');
-    if(index!=null){
-    document.getElementById('result').innerHTML = "<h3>"+index+"</h3>";
-      }
           
         var button = document.createElement('button');
           button.setAttribute('class','button button1');
@@ -456,7 +491,7 @@ function deleteFromCart(){
     var db = openDatabase('bookdb','1.0','online bookstore',2*1024*1024);
 db.transaction(function (tx){
     tx.executeSql('create table if not exists books(bookId unique, name, author, price, description, shortDes, image)');
-    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price)');
+    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price, quantity)');
 });
 db.transaction(function(tx){
     tx.executeSql('SELECT * FROM cart', [], function (tx, results) { 
@@ -477,7 +512,7 @@ db.transaction(function(tx){
     const index = urlParams.get('index');
     var rowId = parseInt(index) + 1;
     tx.executeSql('DELETE FROM cart WHERE name = ?', [cartItems[index]['name']]);
-    window.location.href = 'cart.html?msg=Deleted From Cart Successfully';
+    window.location.href = 'cart.html';
           
       }
     },null);
@@ -491,7 +526,7 @@ function payment(){
     var db = openDatabase('bookdb','1.0','online bookstore',2*1024*1024);
 db.transaction(function (tx){
     tx.executeSql('create table if not exists books(bookId unique, name, author, price, description, shortDes, image)');
-    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price)');
+    tx.executeSql('create table if not exists cart(cartId unique, bookId, name, price, quantity)');
 });
 db.transaction(function(tx){
     tx.executeSql('SELECT * FROM cart', [], function (tx, results) { 
@@ -507,7 +542,7 @@ db.transaction(function(tx){
     var totalPrice = 0;
    function pop(item, index){
        
-       totalPrice = parseInt(totalPrice) + parseInt(item['price']);
+       totalPrice = parseInt(totalPrice) + (parseInt(item['price'])*parseInt(item['quantity']));
        
    }
 cartItems.forEach(pop);
