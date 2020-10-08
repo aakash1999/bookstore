@@ -163,6 +163,16 @@ db.transaction(function(tx){
           }
           console.log('Cart populated');
       }
+      var navDiv = document.getElementsByClassName('navbar')[0];
+        var a1 = document.createElement('a');
+        a1.setAttribute('href','index.html');
+        navDiv.appendChild(a1);
+        a1.appendChild(document.createTextNode('Home'));
+        
+        var a2 = document.createElement('a');
+        a2.setAttribute('href','cart.html');
+        navDiv.appendChild(a2);
+        a2.appendChild(document.createTextNode('Cart['+ cart.length + ']'));
   
    }, null); 
 });
